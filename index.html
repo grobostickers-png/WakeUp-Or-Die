@@ -641,21 +641,31 @@
         }
 
         function checkAlarms(now) {
-            const currentH = now.getHours().toString().padStart(2, '0');
-            const currentM = now.getMinutes().toString().padStart(2, '0');
-            const nowTime = `${currentH}:${currentM}`;
+    // Standardize the current time to HH:mm (24-hour format)
+    const currentH = now.getHours().toString().padStart(2, '0');
+    const currentM = now.getMinutes().toString().padStart(2, '0');
+    const nowTime = `${currentH}:${currentM}`;
 
-            state.alarms.forEach(alarm => {
-                if (alarm.active && alarm.time === nowTime && now.getSeconds() === 0) {
-                    triggerAlarm(alarm);
-                }
-            });
+    state.alarms.forEach(alarm => {
+        // Ensure the alarm time is also padded correctly for comparison
+        let [alarmH, alarmM] = alarm.time.split(':');
+        let formattedAlarmTime = `${alarmH.padStart(2, '0')}:${alarmM.padStart(2, '0')}`;
+
+        if (alarm.active && formattedAlarmTime === nowTime) {
+            // Check seconds to ensure it only triggers ONCE at the start of the minute
+            if (now.getSeconds() === 0 && !activeAlarmObject) {
+                triggerAlarm(alarm);
+            }
         }
+    });
+}
 
-        function triggerAlarm(alarm) {
-            activeAlarmObject = alarm;
-            document.getElementById('alarmScreenTime').textContent = convert24to12(alarm.time);
-            document.getElementById('alarmScreenLabel').textContent = alarm.label;
+function triggerAlarm(alarm) {
+    if (document.getElementById('alarmScreen').classList.contains('active')) return; // Already ringing
+    
+    activeAlarmObject = alarm;
+    document.getElementById('alarmScreenTime').textContent = convert24to12(alarm.time);
+    document.getElementById('alarmScreenLabel').textContent = alarm.label;
             
             generateProblem(alarm.difficulty);
             
